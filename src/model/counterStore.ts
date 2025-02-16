@@ -13,6 +13,7 @@ type CounterState = {
 type CounterActions = {
   increment: () => void;
   decrement: () => void;
+  changeByAmound: (value: number) => void;
 };
 
 // Создание slice (части состояния)
@@ -32,9 +33,18 @@ const counterSlice: StateCreator<CounterState & CounterActions> = (
     const { counter } = get();
     set({ counter: counter + 1 });
   },
+  changeByAmound(value) {
+    const { counter } = get();
+    set({ counter: counter + value });
+  },
 });
 
 // Создание хранилища Zustand
-export const useCounterStore = create<CounterState & CounterActions>(counterSlice);
+export const useCounterStore = create<CounterState & CounterActions>(
+  counterSlice
+);
 
 // create<CounterState>(counterSlice) создает Zustand-хук, который можно использовать в компонентах React
+
+export const changeByAmound = (value: number) => useCounterStore.getState().changeByAmound(value);
+export const getCounter = () => useCounterStore.getState().counter;
