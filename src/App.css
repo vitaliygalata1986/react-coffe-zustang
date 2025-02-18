@@ -6,3 +6,24 @@
   justify-content: center;
   gap: 16px;
 }
+
+.cardsContainer {
+  width: 100%;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.container {
+  display: flex;
+}
+
+.sider {
+  display: flex;
+  width: 300px;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 8px;
+  gap: 16px;
+}
