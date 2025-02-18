@@ -1,7 +1,13 @@
 import { create, StateCreator } from 'zustand';
+import { devtools } from 'zustand/middleware';
+
+/*
+  Импортировали middleware devtools из zustand/middleware.
+  Это позволяет нам подключить инструмент разработчика Redux DevTools, чтобы отслеживать изменения состояния.
+*/
 
 export type TodoType = {
-  title: number;
+  title: string;
   isComplete: boolean;
 };
 
@@ -56,13 +62,29 @@ type TodoActions = {
         { title: "Go to gym", isComplete: false }
     ];
 */
+// [['zustand/devtools']] - название middleware
+// never - не нужно передавать никаких аргументов (для этого middleware)
 
-const todoSlice: StateCreator<TodoState & TodoActions> = (set, get) => ({
+/*
+  Здесь [['zustand/devtools', never]] указывает, что todoSlice использует middleware devtools,
+   и он не требует дополнительных аргументов (поэтому never).
+*/
+
+const todoSlice: StateCreator<
+  TodoState & TodoActions,
+  [['zustand/devtools', never]]
+> = (set, get) => ({
   todos: [],
   addTodo(value: string) {
     const { todos } = get(); // получаем все todo
     // создаем новый массив todo
-    set({ todos: [...todos, { title: value, isComplete: false }] });
+    // false - второй аргумент для предотвращения рендеринга состояния
+    // третий параметр - название нашего action для отображения в Redux DevTools
+    set(
+      { todos: [...todos, { title: value, isComplete: false }] },
+      false,
+      `add Todo ${value}`
+    );
   },
   changeIsComplete(index: number) {
     const { todos } = get();
@@ -75,8 +97,15 @@ const todoSlice: StateCreator<TodoState & TodoActions> = (set, get) => ({
       { ...todos[index], isComplete: !todos[index].isComplete },
       ...todos.slice(index + 1),
     ];
-    set({ todos: newTodos });
+    set(
+      { todos: newTodos },
+      false,
+      `changeIsComplete ${todos[index].title} to ${newTodos[index].isComplete}`
+    );
   },
 });
 
-export const useTodoStore = create<TodoState & TodoActions>(todoSlice);
+// devtools(todoSlice) оборачивает todoSlice, позволяя видеть его в Redux DevTools.
+export const useTodoStore = create<TodoState & TodoActions>()(
+  devtools(todoSlice)
+);
