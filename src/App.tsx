@@ -1,6 +1,6 @@
-import { Button, Card, Rate, Tag } from 'antd';
+import { Button, Card, Rate, Tag, Input } from 'antd';
 import './App.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ShoppingCartOutlined } from '@ant-design/icons';
 import { useCoffeeStore } from './model/coffeStore'; // Подключаем Zustand-хранилище, которое было создано в файле coffeStore.ts.
 
@@ -18,12 +18,24 @@ function App() {
   */
 
   const { getCoffeeList, coffeeList } = useCoffeeStore();
+  const [text, setText] = useState<string | undefined>('');
+
+  const handleSearch = (text: string) => {
+    getCoffeeList({ text });
+    setText(text);
+  };
+
   useEffect(() => {
     getCoffeeList();
   }, []);
 
   return (
     <div className='wrapper'>
+      <Input
+        placeholder='Search'
+        value={text}
+        onChange={(e) => handleSearch(e.target.value)}
+      />
       <div className='cardsContainer'>
         {coffeeList &&
           coffeeList.map((coffee) => (

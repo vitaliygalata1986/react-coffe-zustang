@@ -1,5 +1,5 @@
 import { create, StateCreator } from 'zustand';
-import { CoffeeType } from '../types/coffetypes';
+import { CoffeeType, getCoffeeListReqParams } from '../types/coffetypes';
 import { devtools } from 'zustand/middleware';
 import axios from 'axios';
 
@@ -15,17 +15,22 @@ import axios from 'axios';
   axios — HTTP-клиент для запросов к API.
 */
 
+/*
+  controller — это экземпляр AbortController, который позволяет отменять HTTP-запросы.
+*/
+
 const BASE_URL = 'https://purpleschool.ru/coffee-api';
 
 // Определение типа состояния
 
 type CoffeState = {
   coffeeList?: CoffeeType[];
+  controller?: AbortController; // объект, который позволяет обрывать один или несколько HTTP-запросов
 };
 
 type CoffeeActions = {
   //  функция для загрузки списка кофе из API
-  getCoffeeList: () => void;
+  getCoffeeList: (params?: getCoffeeListReqParams) => void;
 };
 
 // StateCreator в Zustand — это функция, которая определяет хранилище, его начальное состояние и методы для его изменения
@@ -36,14 +41,38 @@ type CoffeeActions = {
     Делаем GET-запрос к BASE_URL с помощью axios.
     Полученные данные сохраняются в coffeeList с помощью set().
 */
-const coffeeSlice: StateCreator<CoffeeState & CoffeeActions,[['zustand/devtools']]> = (set) => ({
+const coffeeSlice: StateCreator<
+  CoffeeState & CoffeeActions,
+  [['zustand/devtools']]
+> = (set, get) => ({
   coffeeList: undefined,
-  getCoffeeList: async () => {
+  controller: undefined,
+  getCoffeeList: async (params) => {
+    const { controller } = get();
+    // Перед новым запросом проверяется, есть ли активный controller
+    if (controller) {
+      // если есть контроллер, то обрываем его (это обрывает запрос с которым связан данный контроллер)
+      // Если предыдущий запрос ещё не завершён, он прерывается.
+      // Это предотвращает ситуации, когда пользователь быстро вводит текст в поиск и отправляется несколько запросов одновременно.
+      controller.abort();
+    }
+    // Создаётся новый AbortController для нового запроса
+    const newController = new AbortController();
+    set({ controller: newController });
+    const { signal } = newController; // получаем с нового контроллера сигнал, будет связывать наш запрос с нашим стейтом
+    // signal связывает этот контроллер с запросом
+
     try {
-      const { data } = await axios.get(BASE_URL);
+      // Axios использует signal для связи запроса с AbortController
+      // Теперь этот HTTP-запрос можно отменить вызовом controller.abort()
+      const { data } = await axios.get(BASE_URL, { params, signal });
       set({ coffeeList: data });
-      console.log(data);
     } catch (error) {
+      // Обрабатывается ошибка отмены запроса
+      // Если запрос отменён, не выводится ошибка в консоль
+      if (axios.isCancel(error)) {
+        return; // Если запрос был отменён, просто выходим
+      }
       console.log(error);
     }
   },
