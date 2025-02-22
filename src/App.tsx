@@ -1,45 +1,55 @@
-import { Card, Checkbox, Input } from 'antd';
+import { Button, Card, Rate, Tag } from 'antd';
 import './App.css';
-//import { addTen } from './helpers/addTen';
-//import { useCounterStore } from './model/counterStore'; // кастомный Zustand-хук из файла ./model/counterStore
-import { useTodoStore } from './model/toDoStore';
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { ShoppingCartOutlined } from '@ant-design/icons';
+import { useCoffeeStore } from './model/coffeStore'; // Подключаем Zustand-хранилище, которое было создано в файле coffeStore.ts.
 
 function App() {
-  // const counter = useCounterStore((state) => state.counter);
-  //const { counter, increment, decrement } = useCounterStore(); // Вытаскиваем counter из Zustand-хранилища
-  const { addTodo, changeIsComplete, todos } = useTodoStore();
-  const [value, setValue] = useState<string>('');
+  // Вызываем useCoffeeStore(), что даёт нам доступ к
+  // getCoffeeList — функции загрузки списка кофе
+  // coffeeList — массиву данных о кофе
+
+  /*
+   Итог:
+    - При загрузке страницы компонент App вызывает getCoffeeList(), чтобы получить список кофе.
+    - Когда coffeeList обновляется, компонент перерисовывается, показывая новые данные.
+    - Всё это работает реактивно, без необходимости вручную обновлять состояние.
+    - Zustand заменяет useState и useReducer, делая код чище и удобнее.
+  */
+
+  const { getCoffeeList, coffeeList } = useCoffeeStore();
+  useEffect(() => {
+    getCoffeeList();
+  }, []);
+
   return (
     <div className='wrapper'>
-      <div>
-        {/* <button onClick={increment}>+</button>
-        <span>{counter}</span>
-        <button onClick={decrement}>-</button>
-        <button onClick={addTen}>add10</button> */}
-        <Input
-          style={{ width: 300 }}
-          onChange={(e) => setValue(e.target.value)}
-          value={value}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              addTodo(value!);
-              setValue('');
-            }
-          }}
-        />
-        {todos.map((todo, index) => (
-          <Card className='card'>
-            <Checkbox
-              checked={todo.isComplete}
-              onChange={() => changeIsComplete(index)}
-            />
-            <span>{todo.title}</span>
-          </Card>
-        ))}
+      <div className='cardsContainer'>
+        {coffeeList &&
+          coffeeList.map((coffee) => (
+            <Card
+              key={coffee.id}
+              cover={<img alt={coffee.image} src={coffee.name} />}
+              actions={[
+                <Button icon={<ShoppingCartOutlined />}>{coffee.price}</Button>,
+              ]}
+            >
+              <Card.Meta title={coffee.name} description={coffee.subTitle} />
+              <Tag color='purple' style={{ marginTop: 12 }}>
+                {coffee.type}
+              </Tag>
+              <Rate
+                defaultValue={coffee.rating}
+                disabled
+                allowHalf
+                style={{ marginTop: 12 }}
+              />
+            </Card>
+          ))}
       </div>
     </div>
   );
 }
 
+// disabled allowHalf - рейтинги нельзя изменять и показывать целочисленные рейтинги
 export default App;
