@@ -17,7 +17,16 @@ function App() {
     - Zustand заменяет useState и useReducer, делая код чище и удобнее.
   */
 
-  const { getCoffeeList, coffeeList } = useCoffeeStore();
+  const {
+    getCoffeeList,
+    coffeeList,
+    addToCart,
+    cart,
+    clearCart,
+    orderCoffee,
+    setAddress,
+    address,
+  } = useCoffeeStore();
   const [text, setText] = useState<string | undefined>('');
 
   const handleSearch = (text: string) => {
@@ -36,28 +45,56 @@ function App() {
         value={text}
         onChange={(e) => handleSearch(e.target.value)}
       />
-      <div className='cardsContainer'>
-        {coffeeList &&
-          coffeeList.map((coffee) => (
-            <Card
-              key={coffee.id}
-              cover={<img alt={coffee.image} src={coffee.name} />}
-              actions={[
-                <Button icon={<ShoppingCartOutlined />}>{coffee.price}</Button>,
-              ]}
-            >
-              <Card.Meta title={coffee.name} description={coffee.subTitle} />
-              <Tag color='purple' style={{ marginTop: 12 }}>
-                {coffee.type}
-              </Tag>
-              <Rate
-                defaultValue={coffee.rating}
-                disabled
-                allowHalf
-                style={{ marginTop: 12 }}
+      <div style={{ display: 'flex' }}>
+        <div className='cardsContainer'>
+          {coffeeList &&
+            coffeeList.map((coffee) => (
+              <Card
+                key={coffee.id}
+                cover={<img alt={coffee.name} src={coffee.image} />}
+                actions={[
+                  <Button
+                    onClick={() => addToCart(coffee)}
+                    icon={<ShoppingCartOutlined />}
+                  >
+                    {coffee.price}
+                  </Button>,
+                ]}
+              >
+                <Card.Meta title={coffee.name} description={coffee.subTitle} />
+                <Tag color='purple' style={{ marginTop: 12 }}>
+                  {coffee.type}
+                </Tag>
+                <Rate
+                  defaultValue={coffee.rating}
+                  disabled
+                  allowHalf
+                  style={{ marginTop: 12 }}
+                />
+              </Card>
+            ))}
+        </div>
+        <aside className='cart'>
+          <h1>Заказ</h1>
+          {cart && cart.length > 0 ? (
+            <>
+              {cart.map((item, index) => (
+                <span key={index}>{item.name}</span>
+              ))}
+              <Input
+                onChange={(e) => setAddress(e.target.value)}
+                value={address}
+                placeholder='Введите адрес доставки'
               />
-            </Card>
-          ))}
+              <Button onClick={orderCoffee} type='primary' disabled={!address}>
+                Сделать заказ
+              </Button>
+              <Button onClick={clearCart}>Очистить корзину</Button>
+            </>
+          ) : (
+            <span>Добавьте напитки</span>
+          )}
+        </aside>
       </div>
     </div>
   );

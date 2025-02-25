@@ -1,6 +1,12 @@
 import { create, StateCreator } from 'zustand';
-import { CoffeeType, getCoffeeListReqParams } from '../types/coffetypes';
-import { devtools } from 'zustand/middleware';
+import {
+  CoffeeType,
+  getCoffeeListReqParams,
+  OrderCoffeeReq,
+  OrderCoffeeRes,
+  OrderItem,
+} from '../types/coffetypes';
+import { devtools, persist } from 'zustand/middleware';
 import axios from 'axios';
 
 /*
@@ -26,11 +32,17 @@ const BASE_URL = 'https://purpleschool.ru/coffee-api';
 type CoffeState = {
   coffeeList?: CoffeeType[];
   controller?: AbortController; // объект, который позволяет обрывать один или несколько HTTP-запросов
+  cart?: OrderItem[]; // массив объектов OrderItem
+  address?: string; // адрес доставки
 };
 
 type CoffeeActions = {
   //  функция для загрузки списка кофе из API
   getCoffeeList: (params?: getCoffeeListReqParams) => void;
+  addToCart: (item: CoffeeType) => void;
+  clearCart: () => void;
+  orderCoffee: (params: OrderCoffeeReq) => void;
+  setAddress: (address: string) => void;
 };
 
 // StateCreator в Zustand — это функция, которая определяет хранилище, его начальное состояние и методы для его изменения
@@ -43,10 +55,42 @@ type CoffeeActions = {
 */
 const coffeeSlice: StateCreator<
   CoffeeState & CoffeeActions,
-  [['zustand/devtools']]
+  [['zustand/devtools', never], ['zustand/persist', unknown]] // middleware
 > = (set, get) => ({
   coffeeList: undefined,
   controller: undefined,
+  cart: undefined,
+  address: undefined,
+  addToCart: (item) => {
+    const { cart } = get();
+    const { id, name, subTitle } = item; // нам нужны только id, name и subTitle
+    const preparedItem: OrderItem = {
+      id,
+      name: `${name} ${subTitle}`,
+      size: 'L',
+      quantity: 1,
+    };
+    set({ cart: cart ? [...cart, preparedItem] : [preparedItem] });
+  },
+  clearCart: () => set({ cart: undefined }),
+  orderCoffee: async () => {
+    const { cart, address, clearCart } = get();
+    try {
+      const { data } = await axios.post<OrderCoffeeRes>(`${BASE_URL}/order`, {
+        address,
+        orderItems: cart,
+      });
+      if (data.success) {
+        alert(data.message);
+        clearCart();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  },
+  setAddress: (address) => {
+    set({ address });
+  },
   getCoffeeList: async (params) => {
     const { controller } = get();
     // Перед новым запросом проверяется, есть ли активный controller
@@ -83,7 +127,15 @@ const coffeeSlice: StateCreator<
 // devtools(coffeeSlice) — подключает middleware devtools, позволяющую отслеживать изменения состояния в Redux DevTools
 // В результате создания хранилища мы получаем React хук useCoffeeStore, который используем для реактивного отображения изменений данных в компонентах.
 export const useCoffeeStore = create<CoffeState & CoffeeActions>()(
-  devtools(coffeeSlice)
+  devtools(
+    persist(coffeeSlice, {
+      name: 'coffeeStore', // coffeeStore - имя хранилища в localStorage
+      partialize: (state) => ({ cart: state.cart, address: state.address }), // сохраняем только cart
+    }),
+    {
+      name: 'coffeeStore', // coffeeStore - имя хранилища в devtools
+    }
+  )
 );
 
 // Что делает StateCreator?
