@@ -3,6 +3,7 @@ import './App.css';
 import { useEffect, useState } from 'react';
 import { ShoppingCartOutlined } from '@ant-design/icons';
 import { useCoffeeStore } from './model/coffeStore'; // Подключаем Zustand-хранилище, которое было создано в файле coffeStore.ts.
+import { useSearchStore } from './model/searchStore';
 
 function App() {
   // Вызываем useCoffeeStore(), что даёт нам доступ к
@@ -27,12 +28,15 @@ function App() {
     setAddress,
     address,
   } = useCoffeeStore();
-  const [text, setText] = useState<string | undefined>('');
 
+  const { text, setText } = useSearchStore();
+
+  /*
   const handleSearch = (text: string) => {
     getCoffeeList({ text });
     setText(text);
   };
+  */
 
   useEffect(() => {
     getCoffeeList();
@@ -43,7 +47,7 @@ function App() {
       <Input
         placeholder='Search'
         value={text}
-        onChange={(e) => handleSearch(e.target.value)}
+        onChange={(e) => setText(e.target.value)} // передаем новый text в наш store useCoffeeStore
       />
       <div style={{ display: 'flex' }}>
         <div className='cardsContainer'>

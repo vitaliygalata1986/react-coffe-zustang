@@ -146,3 +146,16 @@ export const useCoffeeStore = create<CoffeState & CoffeeActions>()(
 
 // Что означает [['zustand/devtools']]
 // Это middleware, подключающая Redux DevTools для отладки.
+
+// экспортируем getCoffeeList
+/*
+В этом коде:
+  - Экспортируем функцию getCoffeeList — она будет доступна для использования в других модулях.
+  - Функция getCoffeeList принимает необязательный параметр params — если переданы параметры, они будут использоваться в запросе.
+  - Вызываем getCoffeeList из useCoffeeStore.getState() — это указывает на то, что мы используем Zustand (библиотеку для управления состоянием в React).
+  - useCoffeeStore.getState() получает текущее состояние стора, а затем вызывается метод getCoffeeList, который, загружает список кофе.
+Фактически, этот код позволяет удобно вызывать метод getCoffeeList из стора Zustand без необходимости вручную использовать useCoffeeStore.
+Функция getCoffeeList не вызывается автоматически при загрузке модуля. Она просто экспортируется, чтобы её можно было вызвать вручную в любом месте кода.
+*/
+export const getCoffeeList = (params?: getCoffeeListReqParams) =>
+  useCoffeeStore.getState().getCoffeeList(params);
