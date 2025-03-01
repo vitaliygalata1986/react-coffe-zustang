@@ -1,6 +1,8 @@
 import { create, StateCreator } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { getCoffeeList } from './coffeStore';
+import { createJSONStorage } from 'zustand/middleware';
+import { hashStorage } from '../types/helpers/hashStorage';
 
 interface ISearchState {
   text?: string;
@@ -13,8 +15,8 @@ interface ISearchActions {
 const searchSlice: StateCreator<
   ISearchState & ISearchActions,
   [
-    ['zustand/devtools', never]
-    //['zustand/persist', unknown]
+    ['zustand/devtools', never],
+    ['zustand/persist', unknown]
   ]
 > = (set) => ({
   text: undefined,
@@ -30,7 +32,7 @@ const searchSlice: StateCreator<
 */
 
 export const useSearchStore = create<ISearchActions & ISearchState>()(
-  devtools(searchSlice, { name: 'searchStore' })
+  devtools(persist(searchSlice, { name: 'searchStore', storage: createJSONStorage(() => hashStorage) }), { name: 'searchStore' })
 );
 
 useSearchStore.subscribe((state, prevState) => {
@@ -42,4 +44,18 @@ useSearchStore.subscribe((state, prevState) => {
 
 /*
 мы связали несколько store через функцию subscribe, которая срабатывает при изменении состояния.
+*/
+
+/*
+  create<ISearchActions & ISearchState>()(...) – создаем Zustand-хранилище.
+  persist(searchSlice, { storage: createJSONStorage(() => hashStorage) }) – добавляем механизм сохранения состояния в hashStorage (то есть в URL-хэш).
+  Работает без localStorage или sessionStorage, но сохраняет данные при перезагрузке.
+  devtools(...) – подключаем Redux DevTools для отладки.
+*/
+
+/*
+  Когда состояние обновляется, оно автоматически сериализуется в JSON и сохраняется в hashStorage.
+  При загрузке страницы состояние считывается из хэша URL.
+  Это полезно для управления фильтрами поиска, табов или других параметров, которые хочется сохранять в URL.
+  DevTools позволяет отлаживать изменения в браузере.
 */
