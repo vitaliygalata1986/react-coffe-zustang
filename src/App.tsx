@@ -1,9 +1,9 @@
 import { Button, Card, Rate, Tag, Input } from 'antd';
 import './App.css';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ShoppingCartOutlined } from '@ant-design/icons';
 import { useCoffeeStore } from './model/coffeStore'; // Подключаем Zustand-хранилище, которое было создано в файле coffeStore.ts.
-import { useSearchStore } from './model/searchStore';
+import { useUrlParamsStore } from './types/helpers/useUrlStorage';
 
 function App() {
   // Вызываем useCoffeeStore(), что даёт нам доступ к
@@ -27,9 +27,11 @@ function App() {
     orderCoffee,
     setAddress,
     address,
+    params,
+    setParams,
   } = useCoffeeStore();
 
-  const { text, setText } = useSearchStore();
+  // const { text, setText } = useSearchStore();
 
   /*
   const handleSearch = (text: string) => {
@@ -39,15 +41,17 @@ function App() {
   */
 
   useEffect(() => {
-    getCoffeeList({ text });
+    getCoffeeList(params);
   }, []);
+
+  useUrlParamsStore(params, setParams);
 
   return (
     <div className='wrapper'>
       <Input
         placeholder='Search'
-        value={text}
-        onChange={(e) => setText(e.target.value)} // передаем новый text в наш store useCoffeeStore
+        value={params.text}
+        onChange={(e) => setParams({ text: e.target.value })} // передаем новый text в наш store useCoffeeStore
       />
       <div style={{ display: 'flex' }}>
         <div className='cardsContainer'>

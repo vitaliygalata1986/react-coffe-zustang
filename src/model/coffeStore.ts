@@ -34,6 +34,7 @@ type CoffeState = {
   controller?: AbortController; // объект, который позволяет обрывать один или несколько HTTP-запросов
   cart?: OrderItem[]; // массив объектов OrderItem
   address?: string; // адрес доставки
+  params: getCoffeeListReqParams;
 };
 
 type CoffeeActions = {
@@ -43,6 +44,7 @@ type CoffeeActions = {
   clearCart: () => void;
   orderCoffee: (params: OrderCoffeeReq) => void;
   setAddress: (address: string) => void;
+  setParams: (params?: getCoffeeListReqParams) => void;
 };
 
 // StateCreator в Zustand — это функция, которая определяет хранилище, его начальное состояние и методы для его изменения
@@ -54,12 +56,20 @@ type CoffeeActions = {
     Полученные данные сохраняются в coffeeList с помощью set().
 */
 const coffeeSlice: StateCreator<
-  CoffeeState & CoffeeActions,
+  CoffeState & CoffeeActions,
   [['zustand/devtools', never], ['zustand/persist', unknown]] // middleware
 > = (set, get) => ({
   coffeeList: undefined,
   controller: undefined,
   cart: undefined,
+  params: {
+    text: undefined,
+  },
+  setParams: (newParams) => {
+    const { getCoffeeList, params } = get();
+    set({ params: { ...params, ...newParams } },false, 'setParams');
+    getCoffeeList(newParams);
+  },
   address: undefined,
   addToCart: (item) => {
     const { cart } = get();
