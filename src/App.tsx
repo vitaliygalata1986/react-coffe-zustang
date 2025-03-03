@@ -1,9 +1,10 @@
-import { Button, Card, Rate, Tag, Input } from 'antd';
+import { Button, Input } from 'antd';
 import './App.css';
 import { useEffect } from 'react';
-import { ShoppingCartOutlined } from '@ant-design/icons';
 import { useCoffeeStore } from './model/coffeStore'; // Подключаем Zustand-хранилище, которое было создано в файле coffeStore.ts.
 import { useUrlParamsStore } from './types/helpers/useUrlStorage';
+import CoffeeCard from './components/CoffeeCard';
+import Cart from './components/Cart';
 
 function App() {
   // Вызываем useCoffeeStore(), что даёт нам доступ к
@@ -18,18 +19,7 @@ function App() {
     - Zustand заменяет useState и useReducer, делая код чище и удобнее.
   */
 
-  const {
-    getCoffeeList,
-    coffeeList,
-    addToCart,
-    cart,
-    clearCart,
-    orderCoffee,
-    setAddress,
-    address,
-    params,
-    setParams,
-  } = useCoffeeStore();
+  const { getCoffeeList, coffeeList, params, setParams } = useCoffeeStore();
 
   // const { text, setText } = useSearchStore();
 
@@ -57,52 +47,10 @@ function App() {
         <div className='cardsContainer'>
           {coffeeList &&
             coffeeList.map((coffee) => (
-              <Card
-                key={coffee.id}
-                cover={<img alt={coffee.name} src={coffee.image} />}
-                actions={[
-                  <Button
-                    onClick={() => addToCart(coffee)}
-                    icon={<ShoppingCartOutlined />}
-                  >
-                    {coffee.price}
-                  </Button>,
-                ]}
-              >
-                <Card.Meta title={coffee.name} description={coffee.subTitle} />
-                <Tag color='purple' style={{ marginTop: 12 }}>
-                  {coffee.type}
-                </Tag>
-                <Rate
-                  defaultValue={coffee.rating}
-                  disabled
-                  allowHalf
-                  style={{ marginTop: 12 }}
-                />
-              </Card>
+              <CoffeeCard key={coffee.id} coffee={coffee} />
             ))}
         </div>
-        <aside className='cart'>
-          <h1>Заказ</h1>
-          {cart && cart.length > 0 ? (
-            <>
-              {cart.map((item, index) => (
-                <span key={index}>{item.name}</span>
-              ))}
-              <Input
-                onChange={(e) => setAddress(e.target.value)}
-                value={address}
-                placeholder='Введите адрес доставки'
-              />
-              <Button onClick={orderCoffee} type='primary' disabled={!address}>
-                Сделать заказ
-              </Button>
-              <Button onClick={clearCart}>Очистить корзину</Button>
-            </>
-          ) : (
-            <span>Добавьте напитки</span>
-          )}
-        </aside>
+        <Cart />
       </div>
     </div>
   );

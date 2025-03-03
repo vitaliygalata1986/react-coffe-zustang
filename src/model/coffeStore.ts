@@ -1,13 +1,9 @@
-import { create, StateCreator } from 'zustand';
-import {
-  CoffeeType,
-  getCoffeeListReqParams,
-  OrderCoffeeReq,
-  OrderCoffeeRes,
-  OrderItem,
-} from '../types/coffetypes';
+import { create } from 'zustand';
+import { getCoffeeListReqParams } from '../types/coffetypes';
+import { CartActions, CartState, ListActions, ListState } from './storetypes';
 import { devtools, persist } from 'zustand/middleware';
-import axios from 'axios';
+import { listSlice } from './listSlice';
+import { cartSlice } from './cartSlice';
 
 /*
   Этот код использует Zustand — легковесную библиотеку для управления состоянием в React-приложениях. 
@@ -25,28 +21,6 @@ import axios from 'axios';
   controller — это экземпляр AbortController, который позволяет отменять HTTP-запросы.
 */
 
-const BASE_URL = 'https://purpleschool.ru/coffee-api';
-
-// Определение типа состояния
-
-type CoffeState = {
-  coffeeList?: CoffeeType[];
-  controller?: AbortController; // объект, который позволяет обрывать один или несколько HTTP-запросов
-  cart?: OrderItem[]; // массив объектов OrderItem
-  address?: string; // адрес доставки
-  params: getCoffeeListReqParams;
-};
-
-type CoffeeActions = {
-  //  функция для загрузки списка кофе из API
-  getCoffeeList: (params?: getCoffeeListReqParams) => void;
-  addToCart: (item: CoffeeType) => void;
-  clearCart: () => void;
-  orderCoffee: (params: OrderCoffeeReq) => void;
-  setAddress: (address: string) => void;
-  setParams: (params?: getCoffeeListReqParams) => void;
-};
-
 // StateCreator в Zustand — это функция, которая определяет хранилище, его начальное состояние и методы для его изменения
 // Функция coffeeSlice — это StateCreator, которая
 /*
@@ -55,90 +29,16 @@ type CoffeeActions = {
     Делаем GET-запрос к BASE_URL с помощью axios.
     Полученные данные сохраняются в coffeeList с помощью set().
 */
-const coffeeSlice: StateCreator<
-  CoffeState & CoffeeActions,
-  [['zustand/devtools', never], ['zustand/persist', unknown]] // middleware
-> = (set, get) => ({
-  coffeeList: undefined,
-  controller: undefined,
-  cart: undefined,
-  params: {
-    text: undefined,
-  },
-  setParams: (newParams) => {
-    const { getCoffeeList, params } = get();
-    set({ params: { ...params, ...newParams } },false, 'setParams');
-    getCoffeeList(newParams);
-  },
-  address: undefined,
-  addToCart: (item) => {
-    const { cart } = get();
-    const { id, name, subTitle } = item; // нам нужны только id, name и subTitle
-    const preparedItem: OrderItem = {
-      id,
-      name: `${name} ${subTitle}`,
-      size: 'L',
-      quantity: 1,
-    };
-    set({ cart: cart ? [...cart, preparedItem] : [preparedItem] });
-  },
-  clearCart: () => set({ cart: undefined }),
-  orderCoffee: async () => {
-    const { cart, address, clearCart } = get();
-    try {
-      const { data } = await axios.post<OrderCoffeeRes>(`${BASE_URL}/order`, {
-        address,
-        orderItems: cart,
-      });
-      if (data.success) {
-        alert(data.message);
-        clearCart();
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  },
-  setAddress: (address) => {
-    set({ address });
-  },
-  getCoffeeList: async (params) => {
-    const { controller } = get();
-    // Перед новым запросом проверяется, есть ли активный controller
-    if (controller) {
-      // если есть контроллер, то обрываем его (это обрывает запрос с которым связан данный контроллер)
-      // Если предыдущий запрос ещё не завершён, он прерывается.
-      // Это предотвращает ситуации, когда пользователь быстро вводит текст в поиск и отправляется несколько запросов одновременно.
-      controller.abort();
-    }
-    // Создаётся новый AbortController для нового запроса
-    const newController = new AbortController();
-    set({ controller: newController });
-    const { signal } = newController; // получаем с нового контроллера сигнал, будет связывать наш запрос с нашим стейтом
-    // signal связывает этот контроллер с запросом
-
-    try {
-      // Axios использует signal для связи запроса с AbortController
-      // Теперь этот HTTP-запрос можно отменить вызовом controller.abort()
-      const { data } = await axios.get(BASE_URL, { params, signal });
-      set({ coffeeList: data });
-    } catch (error) {
-      // Обрабатывается ошибка отмены запроса
-      // Если запрос отменён, не выводится ошибка в консоль
-      if (axios.isCancel(error)) {
-        return; // Если запрос был отменён, просто выходим
-      }
-      console.log(error);
-    }
-  },
-});
 
 // Создание и экспорт Zustand-хранилища:
 // create() — создаёт Zustand-хранилище с состоянием (CoffeState) и действиями (CoffeeActions)
 // devtools(coffeeSlice) — подключает middleware devtools, позволяющую отслеживать изменения состояния в Redux DevTools
 // В результате создания хранилища мы получаем React хук useCoffeeStore, который используем для реактивного отображения изменений данных в компонентах.
-export const useCoffeeStore = create<CoffeState & CoffeeActions>()(
+export const useCoffeeStore = create<
+  CartActions & CartState & ListActions & ListState
+>()(
   devtools(
-    persist(coffeeSlice, {
+    persist((...arg) => ({ ...listSlice(...arg), ...cartSlice(...arg) }), {
       name: 'coffeeStore', // coffeeStore - имя хранилища в localStorage
       partialize: (state) => ({ cart: state.cart, address: state.address }), // сохраняем только cart
     }),
