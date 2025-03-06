@@ -1,12 +1,11 @@
 import { Card, Button, Tag, Rate } from 'antd';
 import { ShoppingCartOutlined } from '@ant-design/icons';
 import { CoffeeType } from '../types/coffetypes';
-import { useCoffeeStore } from '../model/coffeStore';
+import { addToCart } from '../model/coffeStore';
 
 // Мы передаем объект { coffee }, значит, нужно типизировать его структуру
 // То есть, явно указываем, что в props передается объект { coffee: CoffeeType }
 function CoffeeCard({ coffee }: { coffee: CoffeeType }) {
-  const { addToCart } = useCoffeeStore();
   return (
     <Card
       cover={<img alt={coffee.name} src={coffee.image} />}
